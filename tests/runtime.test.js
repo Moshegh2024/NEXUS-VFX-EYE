@@ -58,3 +58,59 @@ test('confidence must stay within 0..100', () => {
   r.dispatch('SET_CONFIDENCE', { value: 101 });
   assert.throws(() => r.dispatch('SUBMIT_ATTEMPT'), /confidence must be 0..100/);
 });
+
+test('submission rejects malformed observations and preserves mission state', () => {
+  const r = toMission();
+  r.dispatch('SET_OBSERVATION', { value: ['   '] });
+  r.dispatch('ADD_EVIDENCE', { value: 'frame 12' });
+  r.dispatch('ADD_HYPOTHESIS', { value: 'hypothesis A' });
+  r.dispatch('ADD_HYPOTHESIS', { value: 'hypothesis B' });
+  r.dispatch('SET_DIAGNOSIS', { value: 'diagnosis' });
+  r.dispatch('SET_CAUSAL_CHAIN', { value: 'cause → effect' });
+  r.dispatch('SET_CORRECTION_ORDER', { value: 'upstream → downstream' });
+  r.dispatch('SET_CONFIDENCE', { value: 50 });
+  assert.throws(() => r.dispatch('SUBMIT_ATTEMPT'), /observations must be/);
+  assert.equal(r.s.state, 'MISSION_PLAY');
+  assert.equal(r.s.submitted, false);
+});
+
+test('submission rejects non-string evidence and hypotheses', () => {
+  const r = toMission();
+  r.dispatch('SET_OBSERVATION', { value: ['frame 12 edge fringe'] });
+  r.dispatch('ADD_EVIDENCE', { value: 42 });
+  r.dispatch('ADD_HYPOTHESIS', { value: 'hypothesis A' });
+  r.dispatch('ADD_HYPOTHESIS', { value: 'hypothesis B' });
+  r.dispatch('SET_DIAGNOSIS', { value: 'diagnosis' });
+  r.dispatch('SET_CAUSAL_CHAIN', { value: 'cause → effect' });
+  r.dispatch('SET_CORRECTION_ORDER', { value: 'upstream → downstream' });
+  r.dispatch('SET_CONFIDENCE', { value: 50 });
+  assert.throws(() => r.dispatch('SUBMIT_ATTEMPT'), /evidence must be/);
+});
+
+test('submission rejects whitespace-only diagnostic fields', () => {
+  const r = toMission();
+  r.dispatch('SET_OBSERVATION', { value: ['frame 12 edge fringe'] });
+  r.dispatch('ADD_EVIDENCE', { value: 'frame 12 / left contour' });
+  r.dispatch('ADD_HYPOTHESIS', { value: 'hypothesis A' });
+  r.dispatch('ADD_HYPOTHESIS', { value: 'hypothesis B' });
+  r.dispatch('SET_DIAGNOSIS', { value: '   ' });
+  r.dispatch('SET_CAUSAL_CHAIN', { value: 'cause → effect' });
+  r.dispatch('SET_CORRECTION_ORDER', { value: 'upstream → downstream' });
+  r.dispatch('SET_CONFIDENCE', { value: 50 });
+  assert.throws(() => r.dispatch('SUBMIT_ATTEMPT'), /submission incomplete/);
+});
+
+test('confidence rejects NaN and Infinity', () => {
+  for (const value of [NaN, Infinity, -Infinity]) {
+    const r = toMission();
+    r.dispatch('SET_OBSERVATION', { value: ['observation'] });
+    r.dispatch('ADD_EVIDENCE', { value: 'frame 1' });
+    r.dispatch('ADD_HYPOTHESIS', { value: 'hypothesis A' });
+    r.dispatch('ADD_HYPOTHESIS', { value: 'hypothesis B' });
+    r.dispatch('SET_DIAGNOSIS', { value: 'diagnosis' });
+    r.dispatch('SET_CAUSAL_CHAIN', { value: 'cause → effect' });
+    r.dispatch('SET_CORRECTION_ORDER', { value: 'upstream → downstream' });
+    r.dispatch('SET_CONFIDENCE', { value });
+    assert.throws(() => r.dispatch('SUBMIT_ATTEMPT'), /confidence must be a finite number/);
+  }
+});
