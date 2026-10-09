@@ -34,6 +34,27 @@ export class Runtime {
  goto(x){this.s.state=x;}
  field(k,v){this.req('MISSION_PLAY');this.s.attempt[k]=v;}
  list(k,v){this.req('MISSION_PLAY');if(v==null)throw new RuntimeError('list item required');(this.s.attempt[k]??=[]).push(v);}
- validate(){const a=this.s.attempt;const missing=required.filter(k=>a[k]==null||a[k]===''||(Array.isArray(a[k])&&!a[k].length));if(missing.length)throw new RuntimeError('submission incomplete: '+missing.join(','));if(!Array.isArray(a.hypotheses)||a.hypotheses.length<2)throw new RuntimeError('at least two competing hypotheses required');if(typeof a.confidence!=='number'||a.confidence<0||a.confidence>100)throw new RuntimeError('confidence must be 0..100');}
+ validate(){
+  const a=this.s.attempt;
+  const textFields=['diagnosis','causal_chain','correction_order'];
+  const missing=required.filter(k=>{
+    const v=a[k];
+    if(v==null) return true;
+    if(typeof v==='string') return v.trim().length===0;
+    if(Array.isArray(v)) return v.length===0;
+    return false;
+  });
+  if(missing.length) throw new RuntimeError('submission incomplete: '+missing.join(','));
+  if(!Array.isArray(a.observations)||!a.observations.length||!a.observations.every(v=>typeof v==='string'&&v.trim().length>0))
+    throw new RuntimeError('observations must be a non-empty list of non-blank strings');
+  if(!Array.isArray(a.evidence)||!a.evidence.length||!a.evidence.every(v=>typeof v==='string'&&v.trim().length>0))
+    throw new RuntimeError('evidence must be a non-empty list of non-blank strings');
+  if(!Array.isArray(a.hypotheses)||a.hypotheses.length<2||!a.hypotheses.every(v=>typeof v==='string'&&v.trim().length>0))
+    throw new RuntimeError('at least two non-blank competing hypotheses are required');
+  for(const k of textFields) if(typeof a[k]!=='string'||!a[k].trim())
+    throw new RuntimeError(k+' must be non-blank text');
+  if(typeof a.confidence!=='number'||!Number.isFinite(a.confidence)||a.confidence<0||a.confidence>100)
+    throw new RuntimeError('confidence must be a finite number from 0 to 100');
+}
  snapshot(){return structuredClone(this.s);}
 }
