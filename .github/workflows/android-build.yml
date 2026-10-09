@@ -41,6 +41,8 @@ jobs:
           sdkmanager "platform-tools" "platforms;android-${ANDROID_API}" "build-tools;${ANDROID_BUILD_TOOLS}"
       - name: Verify source tree before build
         run: bash ci/android_ci.sh prebuild
+      - name: Run runtime invariant tests
+        run: node --test tests/runtime.test.js
       - name: Build debug APK
         working-directory: android
         run: gradle --no-daemon --stacktrace --warning-mode=all :app:assembleDebug
