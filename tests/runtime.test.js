@@ -56,7 +56,7 @@ test('confidence must stay within 0..100', () => {
   r.dispatch('SET_CAUSAL_CHAIN', { value: 'cause → effect' });
   r.dispatch('SET_CORRECTION_ORDER', { value: 'upstream → downstream' });
   r.dispatch('SET_CONFIDENCE', { value: 101 });
-  assert.throws(() => r.dispatch('SUBMIT_ATTEMPT'), /confidence must be 0..100/);
+  assert.throws(() => r.dispatch('SUBMIT_ATTEMPT'), /confidence must be a finite number/);
 });
 
 test('submission rejects malformed observations and preserves mission state', () => {
