@@ -1,0 +1,6 @@
+{
+  "appId": "com.nexus.vfxeye",
+  "appName": "NEXUS VFX EYE",
+  "webDir": "app",
+  "bundledWebRuntime": false
+}
